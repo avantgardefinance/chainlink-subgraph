@@ -7,7 +7,7 @@ type PriceFeed @entity {
   historicalPrices: [Price!]! @derivedFrom(field: "priceFeed")
   hourlyCandles: [HourlyCandle!]! @derivedFrom(field: "priceFeed")
   dailyCandles: [DailyCandle!]! @derivedFrom(field: "priceFeed")
-  WeeklyCandles: [WeeklyCandle!]! @derivedFrom(field: "priceFeed")
+  weeklyCandles: [WeeklyCandle!]! @derivedFrom(field: "priceFeed")
 }
 
 type Price @entity {

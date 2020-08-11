@@ -4,6 +4,7 @@ import {
   Price,
   HourlyCandle,
   DailyCandle,
+  WeeklyCandle,
   PriceFeed,
 } from '../generated/schema';
 
@@ -15,6 +16,11 @@ export function updateHourlyCandle(price: Price): HourlyCandle {
 export function updateDailyCandle(price: Price): DailyCandle {
   let interval = BigInt.fromI32(86400);
   return updateCandle('DailyCandle', interval, price) as DailyCandle;
+}
+
+export function updateWeeklyCandle(price: Price): DailyCandle {
+  let interval = BigInt.fromI32(604800);
+  return updateCandle('WeeklyCandle', interval, price) as WeeklyCandle;
 }
 
 export function createMissingHourlyCandles(
@@ -89,6 +95,10 @@ export function updateCandle(
   // Calculate hourly buckets for the open timestamp.
   let excess = price.timestamp.mod(interval);
   let open = price.timestamp.minus(excess);
+
+  if (type === 'WeeklyCandle'){
+    excess = price.timestamp.minus(BigInt.fromI32(345600)).mod(interval)
+  }
 
   // Use the calculated open timestamp to create the id of the candle
   // and either load the already existing candle or create a new one.

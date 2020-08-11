@@ -4,6 +4,7 @@ type PriceFeed @entity {
   latestPrice: Price!
   latestHourlyCandle: HourlyCandle!
   latestDailyCandle: DailyCandle!
+  latestWeeklyCandle: WeeklyCandle!
   historicalPrices: [Price!]! @derivedFrom(field: "priceFeed")
   hourlyCandles: [HourlyCandle!]! @derivedFrom(field: "priceFeed")
   dailyCandles: [DailyCandle!]! @derivedFrom(field: "priceFeed")

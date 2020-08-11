@@ -17,10 +17,10 @@ export function updateHourlyCandle(price: Price): HourlyCandle {
 export function updateDailyCandle(price: Price): DailyCandle {
   let interval = BigInt.fromI32(86400);
   let adjustment = BigInt.fromI32(0)
-  return updateCandle('DailyCandle', interval, adjustment, price)as DailyCandle;
+  return updateCandle('DailyCandle', interval, adjustment, price) as DailyCandle;
 }
 
-export function updateWeeklyCandle(price: Price): DailyCandle {
+export function updateWeeklyCandle(price: Price): WeeklyCandle {
   let interval = BigInt.fromI32(604800);
   let adjustment = BigInt. fromI32(345600)
   return updateCandle('WeeklyCandle', interval, adjustment, price) as WeeklyCandle;
@@ -33,15 +33,6 @@ export function createMissingHourlyCandles(
   let previous = feed.latestHourlyCandle;
   let interval = BigInt.fromI32(3600);
   createMissingCandles('HourlyCandle', feed, latest, previous, interval);
-}
-
-export function createMissingDailyCandles(
-  feed: PriceFeed,
-  latest: Candle,
-): void {
-  let previous = feed.latestDailyCandle;
-  let interval = BigInt.fromI32(86400);
-  createMissingCandles('DailyCandle', feed, latest, previous, interval);
 }
 
 export function createMissingCandles(
@@ -96,7 +87,7 @@ export function updateCandle(
   adjustment: BigInt,
   price: Price,
 ): Candle {
-  
+
   // Calculate hourly buckets for the open timestamp.
   let excess = price.timestamp.minus(adjustment).mod(interval)
   let open = price.timestamp.minus(excess);

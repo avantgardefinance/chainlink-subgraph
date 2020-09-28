@@ -7,23 +7,24 @@ import {
   WeeklyCandle,
   PriceFeed,
 } from '../generated/schema';
+import { ensureAggregate } from './Aggregate';
 
 export function updateHourlyCandle(price: Price): HourlyCandle {
   let interval = BigInt.fromI32(3600);
-  let adjustment = BigInt.fromI32(0)
-  return updateCandle('HourlyCandle', interval, adjustment, price) as HourlyCandle;
+  let adjustment = BigInt.fromI32(0);
+  return updateCandle('Hourly', interval, adjustment, price) as HourlyCandle;
 }
 
 export function updateDailyCandle(price: Price): DailyCandle {
   let interval = BigInt.fromI32(86400);
-  let adjustment = BigInt.fromI32(0)
-  return updateCandle('DailyCandle', interval, adjustment, price) as DailyCandle;
+  let adjustment = BigInt.fromI32(0);
+  return updateCandle('Daily', interval, adjustment, price) as DailyCandle;
 }
 
 export function updateWeeklyCandle(price: Price): WeeklyCandle {
   let interval = BigInt.fromI32(604800);
-  let adjustment = BigInt. fromI32(345600)
-  return updateCandle('WeeklyCandle', interval, adjustment, price) as WeeklyCandle;
+  let adjustment = BigInt.fromI32(345600);
+  return updateCandle('Weekly', interval, adjustment, price) as WeeklyCandle;
 }
 
 export function createMissingHourlyCandles(
@@ -32,7 +33,16 @@ export function createMissingHourlyCandles(
 ): void {
   let previous = feed.latestHourlyCandle;
   let interval = BigInt.fromI32(3600);
-  createMissingCandles('HourlyCandle', feed, latest, previous, interval);
+  createMissingCandles('Hourly', feed, latest, previous, interval);
+}
+
+export function createMissingDailyCandles(
+  feed: PriceFeed,
+  latest: Candle,
+): void {
+  let previous = feed.latestDailyCandle;
+  let interval = BigInt.fromI32(86400);
+  createMissingCandles('Daily', feed, latest, previous, interval);
 }
 
 export function createMissingCandles(
@@ -55,18 +65,20 @@ export function createMissingCandles(
   while (price != null && open.plus(interval).lt(latest.openTimestamp)) {
     open = open.plus(interval);
     let id = feed.id + '/' + open.toString();
-    let candle = createCandle(id, price, open, open.plus(interval));
+    let candle = createCandle(id, type, price, open, open.plus(interval));
     candle.save(type);
   }
 }
 
 export function createCandle(
   id: string,
+  type: string,
   price: Price,
   open: BigInt,
   close: BigInt,
 ): Candle {
   let candle = new Candle(id);
+  candle.aggregate = ensureAggregate(type, open, close).id;
   candle.openTimestamp = open;
   candle.closeTimestamp = close;
   candle.assetPair = price.assetPair;
@@ -87,18 +99,17 @@ export function updateCandle(
   adjustment: BigInt,
   price: Price,
 ): Candle {
-
   // Calculate hourly buckets for the open timestamp.
-  let excess = price.timestamp.minus(adjustment).mod(interval)
+  let excess = price.timestamp.minus(adjustment).mod(interval);
   let open = price.timestamp.minus(excess);
-  
+
   // Use the calculated open timestamp to create the id of the candle
   // and either load the already existing candle or create a new one.
   let id = price.priceFeed + '/' + open.toString();
   let candle = Candle.load(type, id);
 
   if (!candle) {
-    candle = createCandle(id, price, open, open.plus(interval));
+    candle = createCandle(id, type, price, open, open.plus(interval));
   } else {
     candle.includedPrices = candle.includedPrices.concat([price.id]);
     let prices = candle.includedPrices.map<BigInt>(
@@ -130,11 +141,11 @@ export class Candle extends Entity {
   }
 
   save(type: string): void {
-    store.set(type, this.get('id').toString(), this);
+    store.set(type + 'Candle', this.get('id').toString(), this);
   }
 
   static load(type: string, id: string): Candle | null {
-    return store.get(type, id) as Candle | null;
+    return store.get(type + 'Candle', id) as Candle | null;
   }
 
   get id(): string {
@@ -144,6 +155,15 @@ export class Candle extends Entity {
 
   set id(value: string) {
     this.set('id', Value.fromString(value));
+  }
+
+  get aggregate(): string {
+    let value = this.get('aggregate');
+    return value.toString();
+  }
+
+  set aggregate(value: string) {
+    this.set('aggregate', Value.fromString(value));
   }
 
   get priceFeed(): string {

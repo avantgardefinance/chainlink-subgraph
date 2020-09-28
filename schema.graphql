@@ -22,8 +22,30 @@ type Price @entity {
   timestamp: BigInt!
 }
 
+type HourlyAggregate @entity {
+  id: ID!
+  openTimestamp: BigInt!
+  closeTimestamp: BigInt!
+  candles: [HourlyCandle!]! @derivedFrom(field: "aggregate")
+}
+
+type DailyAggregate @entity {
+  id: ID!
+  openTimestamp: BigInt!
+  closeTimestamp: BigInt!
+  candles: [DailyCandle!]! @derivedFrom(field: "aggregate")
+}
+
+type WeeklyAggregate @entity {
+  id: ID!
+  openTimestamp: BigInt!
+  closeTimestamp: BigInt!
+  candles: [WeeklyCandle!]! @derivedFrom(field: "aggregate")
+}
+
 type HourlyCandle @entity {
   id: ID!
+  aggregate: HourlyAggregate!
   priceFeed: PriceFeed!
   assetPair: String!
   openTimestamp: BigInt!
@@ -39,6 +61,7 @@ type HourlyCandle @entity {
 
 type DailyCandle @entity {
   id: ID!
+  aggregate: DailyAggregate!
   priceFeed: PriceFeed!
   assetPair: String!
   openTimestamp: BigInt!
@@ -54,6 +77,7 @@ type DailyCandle @entity {
 
 type WeeklyCandle @entity {
   id: ID!
+  aggregate: WeeklyAggregate!
   priceFeed: PriceFeed!
   assetPair: String!
   openTimestamp: BigInt!

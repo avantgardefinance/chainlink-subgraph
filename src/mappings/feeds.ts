@@ -1,13 +1,12 @@
-import { AnswerUpdated, NewRound } from '../generated/AggregatorInterface';
 import {
-  updateHourlyCandle,
-  updateDailyCandle,
-  createMissingHourlyCandles,
   Candle,
-  updateWeeklyCandle,
+  createMissingDailyCandles, createMissingHourlyCandles, updateDailyCandle, updateHourlyCandle,
+  updateWeeklyCandle
 } from '../entities/Candles';
-import { ensurePriceFeed } from '../entities/PriceFeed';
 import { createPrice } from '../entities/Price';
+import { ensurePriceFeed } from '../entities/PriceFeed';
+import { AnswerUpdated, NewRound } from '../generated/AggregatorInterface';
+
 
 export function handleAnswerUpdatedForPair(
   pair: string,
@@ -20,6 +19,7 @@ export function handleAnswerUpdatedForPair(
   let weekly = updateWeeklyCandle(price);
 
   createMissingHourlyCandles(feed, hourly as Candle);
+  createMissingDailyCandles(feed, daily as Candle);
 
   feed.latestPrice = price.id;
   feed.latestHourlyCandle = hourly.id;

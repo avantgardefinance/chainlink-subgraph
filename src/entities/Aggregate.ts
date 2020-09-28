@@ -1,15 +1,11 @@
 import { BigInt, Entity, Value, store } from '@graphprotocol/graph-ts';
 
-export function aggregateId(open: BigInt): string {
-  return open.toString();
+export function aggregateId(type: String, open: BigInt): string {
+  return type + '/' + open.toString();
 }
 
-export function ensureAggregate(
-  type: string,
-  open: BigInt,
-  close: BigInt,
-): Aggregate {
-  let id = aggregateId(open);
+export function ensureAggregate(type: string, open: BigInt, close: BigInt): Aggregate {
+  let id = aggregateId(type, open);
   let aggregate = Aggregate.load(type, id) as Aggregate;
 
   if (aggregate) {

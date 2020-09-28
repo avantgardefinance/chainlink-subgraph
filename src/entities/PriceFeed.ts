@@ -1,10 +1,7 @@
 import { ethereum } from '@graphprotocol/graph-ts';
 import { PriceFeed } from '../generated/schema';
 
-export function ensurePriceFeed(
-  event: ethereum.Event,
-  pair: string,
-): PriceFeed {
+export function ensurePriceFeed(event: ethereum.Event, pair: string): PriceFeed {
   let id = event.address.toHex();
   let feed = PriceFeed.load(id) as PriceFeed;
   if (feed) {

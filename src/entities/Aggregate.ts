@@ -1,4 +1,4 @@
-import { BigInt, Entity, Value, store } from '@graphprotocol/graph-ts';
+import { BigInt, Entity, store, Value } from '@graphprotocol/graph-ts';
 
 export function aggregateId(type: String, open: BigInt): string {
   return type + '/' + open.toString();

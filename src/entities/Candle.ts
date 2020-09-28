@@ -1,12 +1,6 @@
-import { BigInt, Entity, Value, store } from '@graphprotocol/graph-ts';
+import { BigInt, Entity, store, Value } from '@graphprotocol/graph-ts';
+import { DailyCandle, HourlyCandle, Price, PriceFeed, WeeklyCandle } from '../generated/schema';
 import { calculateAverage, calculateMedian } from '../utils/math';
-import {
-  Price,
-  HourlyCandle,
-  DailyCandle,
-  WeeklyCandle,
-  PriceFeed,
-} from '../generated/schema';
 import { ensureAggregate } from './Aggregate';
 
 export function updateHourlyCandle(price: Price): HourlyCandle {
@@ -27,22 +21,22 @@ export function updateWeeklyCandle(price: Price): WeeklyCandle {
   return updateCandle('Weekly', interval, adjustment, price) as WeeklyCandle;
 }
 
-export function createMissingHourlyCandles(
-  feed: PriceFeed,
-  latest: Candle,
-): void {
+export function createMissingHourlyCandles(feed: PriceFeed, latest: Candle): void {
   let previous = feed.latestHourlyCandle;
   let interval = BigInt.fromI32(3600);
   createMissingCandles('Hourly', feed, latest, previous, interval);
 }
 
-export function createMissingDailyCandles(
-  feed: PriceFeed,
-  latest: Candle,
-): void {
+export function createMissingDailyCandles(feed: PriceFeed, latest: Candle): void {
   let previous = feed.latestDailyCandle;
   let interval = BigInt.fromI32(86400);
   createMissingCandles('Daily', feed, latest, previous, interval);
+}
+
+export function createMissingWeeklyCandles(feed: PriceFeed, latest: Candle): void {
+  let previous = feed.latestDailyCandle;
+  let interval = BigInt.fromI32(604800);
+  createMissingCandles('Weekly', feed, latest, previous, interval);
 }
 
 export function createMissingCandles(
@@ -70,13 +64,7 @@ export function createMissingCandles(
   }
 }
 
-export function createCandle(
-  id: string,
-  type: string,
-  price: Price,
-  open: BigInt,
-  close: BigInt,
-): Candle {
+export function createCandle(id: string, type: string, price: Price, open: BigInt, close: BigInt): Candle {
   let candle = new Candle(id);
   candle.aggregate = ensureAggregate(type, open, close).id;
   candle.openTimestamp = open;
@@ -93,18 +81,10 @@ export function createCandle(
   return candle;
 }
 
-export function updateCandle(
-  type: string,
-  interval: BigInt,
-  adjustment: BigInt,
-  price: Price,
-): Candle {
-  // Calculate hourly buckets for the open timestamp.
+export function updateCandle(type: string, interval: BigInt, adjustment: BigInt, price: Price): Candle {
   let excess = price.timestamp.minus(adjustment).mod(interval);
   let open = price.timestamp.minus(excess);
 
-  // Use the calculated open timestamp to create the id of the candle
-  // and either load the already existing candle or create a new one.
   let id = price.priceFeed + '/' + open.toString();
   let candle = Candle.load(type, id);
 
@@ -112,9 +92,7 @@ export function updateCandle(
     candle = createCandle(id, type, price, open, open.plus(interval));
   } else {
     candle.includedPrices = candle.includedPrices.concat([price.id]);
-    let prices = candle.includedPrices.map<BigInt>(
-      (id) => Price.load(id).price,
-    );
+    let prices = candle.includedPrices.map<BigInt>((id) => Price.load(id).price);
 
     candle.averagePrice = calculateAverage(prices);
     candle.averagePrice = calculateMedian(prices);

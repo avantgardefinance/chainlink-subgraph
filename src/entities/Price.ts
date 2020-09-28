@@ -1,5 +1,5 @@
-import { Price, PriceFeed } from '../generated/schema';
 import { AnswerUpdated } from '../generated/AggregatorInterface';
+import { Price, PriceFeed } from '../generated/schema';
 
 export function priceId(event: AnswerUpdated): string {
   let address = event.address.toHex();

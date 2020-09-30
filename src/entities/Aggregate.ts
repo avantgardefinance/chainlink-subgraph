@@ -1,8 +1,9 @@
-import { BigInt, Entity, store, Value, ethereum, log } from '@graphprotocol/graph-ts';
+import { BigInt } from '@graphprotocol/graph-ts';
 import { Price } from '../generated/schema';
 import { getPreviousStartTime } from '../utils/candleTimes';
 import { logCritical } from '../utils/logCritical';
-import { Candle, createCandle } from './Candle';
+import { createCandle } from './Candle';
+import { Aggregate, Candle } from './Entity';
 import { usePriceFeed } from './PriceFeed';
 
 export function aggregateId(type: String, open: BigInt): string {
@@ -55,53 +56,10 @@ export function ensureAggregate(type: string, open: BigInt, close: BigInt): Aggr
   return aggregate;
 }
 
-export class Aggregate extends Entity {
-  constructor(id: string) {
-    super();
-    this.set('id', Value.fromString(id));
+export function useAggregate(type: string, id: string): Aggregate {
+  let aggregate = Aggregate.load(type, id) as Aggregate;
+  if (aggregate == null) {
+    logCritical('{} Aggregate {} does not exist', [type, id]);
   }
-
-  save(type: string): void {
-    store.set(type + 'Aggregate', this.get('id').toString(), this);
-  }
-
-  static load(type: string, id: string): Aggregate | null {
-    return store.get(type + 'Aggregate', id) as Aggregate | null;
-  }
-
-  get id(): string {
-    let value = this.get('id');
-    return value.toString();
-  }
-
-  set id(value: string) {
-    this.set('id', Value.fromString(value));
-  }
-
-  get openTimestamp(): BigInt {
-    let value = this.get('openTimestamp');
-    return value.toBigInt();
-  }
-
-  set openTimestamp(value: BigInt) {
-    this.set('openTimestamp', Value.fromBigInt(value));
-  }
-
-  get closeTimestamp(): BigInt {
-    let value = this.get('closeTimestamp');
-    return value.toBigInt();
-  }
-
-  set closeTimestamp(value: BigInt) {
-    this.set('closeTimestamp', Value.fromBigInt(value));
-  }
-
-  get candles(): Array<string> {
-    let value = this.get('candles');
-    return value.toStringArray();
-  }
-
-  set candles(value: Array<string>) {
-    this.set('candles', Value.fromStringArray(value));
-  }
+  return aggregate;
 }

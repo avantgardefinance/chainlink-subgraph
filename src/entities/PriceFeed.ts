@@ -1,6 +1,5 @@
 import { ethereum } from '@graphprotocol/graph-ts';
 import { PriceFeed } from '../generated/schema';
-import { arrayUnique } from '../utils/arrayUnique';
 import { logCritical } from '../utils/logCritical';
 
 export function ensurePriceFeed(event: ethereum.Event, pair: string): PriceFeed {

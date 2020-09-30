@@ -1,6 +1,7 @@
 import { BigInt } from '@graphprotocol/graph-ts';
-import { DailyCandle, HourlyCandle, Price, WeeklyCandle } from '../generated/schema';
+import { DailyCandle, HourlyCandle, Price, PriceFeed, WeeklyCandle } from '../generated/schema';
 import { arrayUnique } from '../utils/arrayUnique';
+import { day, dayAdjustment, hour, hourAdjustment, week, weekAdjustment } from '../utils/time';
 import { calculateAverage, calculateMedian } from '../utils/math';
 import { aggregateId, ensureAggregate, useAggregate } from './Aggregate';
 import { Candle } from './Entity';
@@ -10,64 +11,67 @@ export function candleId(priceFeedId: string, type: string, open: BigInt): strin
 }
 
 export function updateHourlyCandle(price: Price): HourlyCandle {
-  let interval = BigInt.fromI32(3600);
-  let adjustment = BigInt.fromI32(0);
+  let interval = hour;
+  let adjustment = hourAdjustment;
   return updateCandle('Hourly', interval, adjustment, price) as HourlyCandle;
 }
 
 export function updateDailyCandle(price: Price): DailyCandle {
-  let interval = BigInt.fromI32(86400);
-  let adjustment = BigInt.fromI32(0);
+  let interval = day;
+  let adjustment = dayAdjustment;
   return updateCandle('Daily', interval, adjustment, price) as DailyCandle;
 }
 
 export function updateWeeklyCandle(price: Price): WeeklyCandle {
-  let interval = BigInt.fromI32(604800);
-  let adjustment = BigInt.fromI32(345600);
+  let interval = week;
+  let adjustment = weekAdjustment;
   return updateCandle('Weekly', interval, adjustment, price) as WeeklyCandle;
 }
 
-// export function createMissingHourlyCandles(feed: PriceFeed, latest: Candle): void {
-//   let previous = feed.latestHourlyCandle;
-//   let interval = BigInt.fromI32(3600);
-//   createMissingCandles('Hourly', feed, latest, previous, interval);
-// }
+export function createMissingHourlyCandles(feed: PriceFeed, latest: Candle): void {
+  let previous = feed.latestHourlyCandle;
+  let interval = hour;
+  createMissingCandles('Hourly', feed, latest, previous, interval);
+}
 
-// export function createMissingDailyCandles(feed: PriceFeed, latest: Candle): void {
-//   let previous = feed.latestDailyCandle;
-//   let interval = BigInt.fromI32(86400);
-//   createMissingCandles('Daily', feed, latest, previous, interval);
-// }
+export function createMissingDailyCandles(feed: PriceFeed, latest: Candle): void {
+  let previous = feed.latestDailyCandle;
+  let interval = day;
+  createMissingCandles('Daily', feed, latest, previous, interval);
+}
 
-// export function createMissingWeeklyCandles(feed: PriceFeed, latest: Candle): void {
-//   let previous = feed.latestDailyCandle;
-//   let interval = BigInt.fromI32(604800);
-//   createMissingCandles('Weekly', feed, latest, previous, interval);
-// }
+export function createMissingWeeklyCandles(feed: PriceFeed, latest: Candle): void {
+  let previous = feed.latestDailyCandle;
+  let interval = week;
+  createMissingCandles('Weekly', feed, latest, previous, interval);
+}
 
-// export function createMissingCandles(
-//   type: string,
-//   feed: PriceFeed,
-//   latest: Candle,
-//   previd: string,
-//   interval: BigInt,
-// ): void {
-//   let previous = Candle.load(type, previd);
-//   if (!previous) {
-//     return;
-//   }
+export function createMissingCandles(
+  type: string,
+  feed: PriceFeed,
+  latest: Candle,
+  previd: string,
+  interval: BigInt,
+): void {
+  let previous = Candle.load(type, previd);
+  if (!previous) {
+    return;
+  }
 
-//   let open = previous.openTimestamp;
-//   let prices = previous.includedPrices;
-//   let last = prices[prices.length - 1];
-//   let price = Price.load(last) as Price;
+  let open = previous.openTimestamp;
+  let prices = previous.includedPrices;
+  let last = prices[prices.length - 1];
+  let price = Price.load(last) as Price;
 
-//   while (price != null && open.plus(interval).lt(latest.openTimestamp)) {
-//     open = open.plus(interval);
-//     let id = feed.id + '/' + open.toString();
-//     createCandle(id, type, price, open, open.plus(interval));
-//   }
-// }
+  while (price != null && open.plus(interval).lt(latest.openTimestamp)) {
+    open = open.plus(interval);
+
+    ensureAggregate(type, open, open.plus(interval));
+
+    let id = feed.id + '/' + open.toString();
+    createCandle(id, type, price, open, open.plus(interval));
+  }
+}
 
 export function createCandle(id: string, type: string, price: Price, open: BigInt, close: BigInt): Candle {
   let aggregate = useAggregate(type, aggregateId(type, open));

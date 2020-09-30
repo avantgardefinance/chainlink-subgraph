@@ -1,8 +1,12 @@
 import { BigInt } from '@graphprotocol/graph-ts';
 
-let hour = BigInt.fromI32(3600);
-let day = BigInt.fromI32(86400);
-let week = BigInt.fromI32(604800);
+export let hour = BigInt.fromI32(3600);
+export let day = BigInt.fromI32(86400);
+export let week = BigInt.fromI32(604800);
+
+export let hourAdjustment = BigInt.fromI32(0);
+export let dayAdjustment = BigInt.fromI32(0);
+export let weekAdjustment = BigInt.fromI32(345600);
 
 export function getPreviousStartTime(current: BigInt, type: string): BigInt {
   if (type == 'Hourly') {

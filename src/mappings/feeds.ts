@@ -1,4 +1,12 @@
-import { updateDailyCandle, updateHourlyCandle, updateWeeklyCandle } from '../entities/Candle';
+import {
+  createMissingDailyCandles,
+  createMissingHourlyCandles,
+  createMissingWeeklyCandles,
+  updateDailyCandle,
+  updateHourlyCandle,
+  updateWeeklyCandle,
+} from '../entities/Candle';
+import { Candle } from '../entities/Entity';
 import { createPrice } from '../entities/Price';
 import { ensurePriceFeed } from '../entities/PriceFeed';
 import { AnswerUpdated, NewRound } from '../generated/AggregatorInterface';
@@ -11,9 +19,9 @@ export function handleAnswerUpdatedForPair(pair: string, event: AnswerUpdated): 
   let daily = updateDailyCandle(price);
   let weekly = updateWeeklyCandle(price);
 
-  // createMissingHourlyCandles(feed, hourly as Candle);
-  // createMissingDailyCandles(feed, daily as Candle);
-  // createMissingWeeklyCandles(feed, daily as Candle);
+  createMissingHourlyCandles(feed, hourly as Candle);
+  createMissingDailyCandles(feed, daily as Candle);
+  createMissingWeeklyCandles(feed, daily as Candle);
 
   feed.latestPrice = price.id;
   feed.latestHourlyCandle = hourly.id;

@@ -36,7 +36,6 @@ export function useAggregate(type: string, id: string): Aggregate {
 }
 
 export function prePopulateCandles(type: string, open: BigInt, close: BigInt): Candle[] {
-  // copy candles of previous aggregate to new aggregate
   let previousAggregateId = aggregateId(type, getPreviousStartTime(open, type));
   let previousAggregate = Aggregate.load(type, previousAggregateId);
 

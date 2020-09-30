@@ -1,6 +1,6 @@
 import { BigInt } from '@graphprotocol/graph-ts';
 import { Price } from '../generated/schema';
-import { getPreviousStartTime } from '../utils/candleTimes';
+import { getPreviousStartTime } from '../utils/getPreviousStartTime';
 import { logCritical } from '../utils/logCritical';
 import { createCandle } from './Candle';
 import { Aggregate, Candle } from './Entity';

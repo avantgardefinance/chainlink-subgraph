@@ -1,3 +1,34 @@
+#################################################
+# Interfaces
+#################################################
+
+interface Aggregate {
+  id: ID!
+  openTimestamp: BigInt!
+  closeTimestamp: BigInt!
+  candles: [Candle!]!
+}
+
+interface Candle {
+  id: ID!
+  aggregate: Aggregate!
+  priceFeed: PriceFeed!
+  assetPair: String!
+  openTimestamp: BigInt!
+  closeTimestamp: BigInt!
+  averagePrice: BigInt!
+  medianPrice: BigInt!
+  openPrice: BigInt!
+  closePrice: BigInt!
+  lowPrice: BigInt!
+  highPrice: BigInt!
+  includedPrices: [Price!]!
+}
+
+#################################################
+# Entities
+#################################################
+
 type PriceFeed @entity {
   id: ID!
   assetPair: String!
@@ -22,30 +53,30 @@ type Price @entity {
   timestamp: BigInt!
 }
 
-type HourlyAggregate @entity {
+type HourlyAggregate implements Aggregate @entity {
   id: ID!
   openTimestamp: BigInt!
   closeTimestamp: BigInt!
-  candles: [HourlyCandle!]!
+  candles: [Candle!]!
 }
 
-type DailyAggregate @entity {
+type DailyAggregate implements Aggregate @entity {
   id: ID!
   openTimestamp: BigInt!
   closeTimestamp: BigInt!
-  candles: [DailyCandle!]!
+  candles: [Candle!]!
 }
 
-type WeeklyAggregate @entity {
+type WeeklyAggregate implements Aggregate @entity {
   id: ID!
   openTimestamp: BigInt!
   closeTimestamp: BigInt!
-  candles: [WeeklyCandle!]!
+  candles: [Candle!]!
 }
 
-type HourlyCandle @entity {
+type HourlyCandle implements Candle @entity {
   id: ID!
-  aggregate: HourlyAggregate!
+  aggregate: Aggregate!
   priceFeed: PriceFeed!
   assetPair: String!
   openTimestamp: BigInt!
@@ -59,9 +90,9 @@ type HourlyCandle @entity {
   includedPrices: [Price!]!
 }
 
-type DailyCandle @entity {
+type DailyCandle implements Candle @entity {
   id: ID!
-  aggregate: DailyAggregate!
+  aggregate: Aggregate!
   priceFeed: PriceFeed!
   assetPair: String!
   openTimestamp: BigInt!
@@ -75,9 +106,9 @@ type DailyCandle @entity {
   includedPrices: [Price!]!
 }
 
-type WeeklyCandle @entity {
+type WeeklyCandle implements Candle @entity {
   id: ID!
-  aggregate: WeeklyAggregate!
+  aggregate: Aggregate!
   priceFeed: PriceFeed!
   assetPair: String!
   openTimestamp: BigInt!

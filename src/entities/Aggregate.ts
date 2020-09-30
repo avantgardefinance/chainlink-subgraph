@@ -2,7 +2,7 @@ import { BigInt } from '@graphprotocol/graph-ts';
 import { Price } from '../generated/schema';
 import { getPreviousStartTime } from '../utils/getPreviousStartTime';
 import { logCritical } from '../utils/logCritical';
-import { createCandle } from './Candle';
+import { candleId, createCandle } from './Candle';
 import { Aggregate, Candle } from './Entity';
 import { usePriceFeed } from './PriceFeed';
 
@@ -63,7 +63,7 @@ export function prePopulateCandles(type: string, open: BigInt, close: BigInt): C
       continue;
     }
 
-    let newCandleId = usePriceFeed(previousCandle.priceFeed).id + '/' + open.toString();
+    let newCandleId = candleId(usePriceFeed(previousCandle.priceFeed).id, type, open);
     let newCandle = createCandle(newCandleId, type, price, open, close);
     newCandles = newCandles.concat([newCandle]);
   }

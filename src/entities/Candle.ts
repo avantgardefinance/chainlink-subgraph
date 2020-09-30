@@ -5,6 +5,10 @@ import { calculateAverage, calculateMedian } from '../utils/math';
 import { aggregateId, ensureAggregate, useAggregate } from './Aggregate';
 import { Candle } from './Entity';
 
+export function candleId(priceFeedId: string, type: string, open: BigInt): string {
+  return priceFeedId + '/' + type + '/' + open.toString();
+}
+
 export function updateHourlyCandle(price: Price): HourlyCandle {
   let interval = BigInt.fromI32(3600);
   let adjustment = BigInt.fromI32(0);
@@ -96,7 +100,7 @@ export function updateCandle(type: string, interval: BigInt, adjustment: BigInt,
 
   ensureAggregate(type, open, close);
 
-  let id = price.priceFeed + '/' + open.toString();
+  let id = candleId(price.priceFeed, type, open);
   let candle = Candle.load(type, id) as Candle;
 
   if (!candle) {

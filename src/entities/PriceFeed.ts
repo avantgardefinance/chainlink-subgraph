@@ -1,5 +1,7 @@
 import { ethereum } from '@graphprotocol/graph-ts';
 import { PriceFeed } from '../generated/schema';
+import { arrayUnique } from '../utils/arrayUnique';
+import { logCritical } from '../utils/logCritical';
 
 export function ensurePriceFeed(event: ethereum.Event, pair: string): PriceFeed {
   let id = event.address.toHex();
@@ -15,4 +17,12 @@ export function ensurePriceFeed(event: ethereum.Event, pair: string): PriceFeed 
   feed.latestDailyCandle = '';
 
   return feed;
+}
+
+export function usePriceFeed(id: string): PriceFeed {
+  let priceFeed = PriceFeed.load(id) as PriceFeed;
+  if (priceFeed == null) {
+    logCritical('Failed to load price feed {}.', [id]);
+  }
+  return priceFeed;
 }

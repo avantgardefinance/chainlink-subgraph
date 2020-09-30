@@ -1,5 +1,6 @@
 import { BigInt, Entity, store, Value } from '@graphprotocol/graph-ts';
-import { DailyCandle, HourlyCandle, Price, PriceFeed, WeeklyCandle } from '../generated/schema';
+import { DailyCandle, HourlyCandle, Price, WeeklyCandle } from '../generated/schema';
+import { arrayUnique } from '../utils/arrayUnique';
 import { calculateAverage, calculateMedian } from '../utils/math';
 import { ensureAggregate } from './Aggregate';
 
@@ -21,52 +22,53 @@ export function updateWeeklyCandle(price: Price): WeeklyCandle {
   return updateCandle('Weekly', interval, adjustment, price) as WeeklyCandle;
 }
 
-export function createMissingHourlyCandles(feed: PriceFeed, latest: Candle): void {
-  let previous = feed.latestHourlyCandle;
-  let interval = BigInt.fromI32(3600);
-  createMissingCandles('Hourly', feed, latest, previous, interval);
-}
+// export function createMissingHourlyCandles(feed: PriceFeed, latest: Candle): void {
+//   let previous = feed.latestHourlyCandle;
+//   let interval = BigInt.fromI32(3600);
+//   createMissingCandles('Hourly', feed, latest, previous, interval);
+// }
 
-export function createMissingDailyCandles(feed: PriceFeed, latest: Candle): void {
-  let previous = feed.latestDailyCandle;
-  let interval = BigInt.fromI32(86400);
-  createMissingCandles('Daily', feed, latest, previous, interval);
-}
+// export function createMissingDailyCandles(feed: PriceFeed, latest: Candle): void {
+//   let previous = feed.latestDailyCandle;
+//   let interval = BigInt.fromI32(86400);
+//   createMissingCandles('Daily', feed, latest, previous, interval);
+// }
 
-export function createMissingWeeklyCandles(feed: PriceFeed, latest: Candle): void {
-  let previous = feed.latestDailyCandle;
-  let interval = BigInt.fromI32(604800);
-  createMissingCandles('Weekly', feed, latest, previous, interval);
-}
+// export function createMissingWeeklyCandles(feed: PriceFeed, latest: Candle): void {
+//   let previous = feed.latestDailyCandle;
+//   let interval = BigInt.fromI32(604800);
+//   createMissingCandles('Weekly', feed, latest, previous, interval);
+// }
 
-export function createMissingCandles(
-  type: string,
-  feed: PriceFeed,
-  latest: Candle,
-  previd: string,
-  interval: BigInt,
-): void {
-  let previous = Candle.load(type, previd);
-  if (!previous) {
-    return;
-  }
+// export function createMissingCandles(
+//   type: string,
+//   feed: PriceFeed,
+//   latest: Candle,
+//   previd: string,
+//   interval: BigInt,
+// ): void {
+//   let previous = Candle.load(type, previd);
+//   if (!previous) {
+//     return;
+//   }
 
-  let open = previous.openTimestamp;
-  let prices = previous.includedPrices;
-  let last = prices[prices.length - 1];
-  let price = Price.load(last) as Price;
+//   let open = previous.openTimestamp;
+//   let prices = previous.includedPrices;
+//   let last = prices[prices.length - 1];
+//   let price = Price.load(last) as Price;
 
-  while (price != null && open.plus(interval).lt(latest.openTimestamp)) {
-    open = open.plus(interval);
-    let id = feed.id + '/' + open.toString();
-    let candle = createCandle(id, type, price, open, open.plus(interval));
-    candle.save(type);
-  }
-}
+//   while (price != null && open.plus(interval).lt(latest.openTimestamp)) {
+//     open = open.plus(interval);
+//     let id = feed.id + '/' + open.toString();
+//     createCandle(id, type, price, open, open.plus(interval));
+//   }
+// }
 
 export function createCandle(id: string, type: string, price: Price, open: BigInt, close: BigInt): Candle {
+  let aggregate = ensureAggregate(type, open, close);
+
   let candle = new Candle(id);
-  candle.aggregate = ensureAggregate(type, open, close).id;
+  candle.aggregate = aggregate.id;
   candle.openTimestamp = open;
   candle.closeTimestamp = close;
   candle.assetPair = price.assetPair;
@@ -78,6 +80,11 @@ export function createCandle(id: string, type: string, price: Price, open: BigIn
   candle.highPrice = price.price;
   candle.lowPrice = price.price;
   candle.includedPrices = [price.id];
+  candle.save(type);
+
+  aggregate.candles = arrayUnique<string>(aggregate.candles.concat([candle.id]));
+  aggregate.save(type);
+
   return candle;
 }
 
@@ -86,13 +93,13 @@ export function updateCandle(type: string, interval: BigInt, adjustment: BigInt,
   let open = price.timestamp.minus(excess);
 
   let id = price.priceFeed + '/' + open.toString();
-  let candle = Candle.load(type, id);
+  let candle = Candle.load(type, id) as Candle;
 
   if (!candle) {
     candle = createCandle(id, type, price, open, open.plus(interval));
   } else {
     candle.includedPrices = candle.includedPrices.concat([price.id]);
-    let prices = candle.includedPrices.map<BigInt>((id) => Price.load(id).price);
+    let prices = candle.includedPrices.map<BigInt>((id) => (Price.load(id) as Price).price);
 
     candle.averagePrice = calculateAverage(prices);
     candle.averagePrice = calculateMedian(prices);
@@ -105,11 +112,10 @@ export function updateCandle(type: string, interval: BigInt, adjustment: BigInt,
     if (price.price.gt(candle.highPrice)) {
       candle.highPrice = price.price;
     }
+    candle.save(type);
   }
 
-  candle.save(type);
-
-  return candle as Candle;
+  return candle;
 }
 
 export class Candle extends Entity {

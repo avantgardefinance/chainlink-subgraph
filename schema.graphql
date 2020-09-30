@@ -26,21 +26,21 @@ type HourlyAggregate @entity {
   id: ID!
   openTimestamp: BigInt!
   closeTimestamp: BigInt!
-  candles: [HourlyCandle!]! @derivedFrom(field: "aggregate")
+  candles: [HourlyCandle!]!
 }
 
 type DailyAggregate @entity {
   id: ID!
   openTimestamp: BigInt!
   closeTimestamp: BigInt!
-  candles: [DailyCandle!]! @derivedFrom(field: "aggregate")
+  candles: [DailyCandle!]!
 }
 
 type WeeklyAggregate @entity {
   id: ID!
   openTimestamp: BigInt!
   closeTimestamp: BigInt!
-  candles: [WeeklyCandle!]! @derivedFrom(field: "aggregate")
+  candles: [WeeklyCandle!]!
 }
 
 type HourlyCandle @entity {

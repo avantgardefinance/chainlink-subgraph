@@ -21,6 +21,10 @@ export function ensureAggregate(type: string, open: BigInt, close: BigInt): Aggr
   aggregate = new Aggregate(id);
   aggregate.openTimestamp = open;
   aggregate.closeTimestamp = close;
+  aggregate.candles = [];
+  aggregate.save(type);
+
+  // need to do this
   aggregate.candles = prePopulateCandles(type, open, close).map<string>((candle) => candle.id);
   aggregate.save(type);
 

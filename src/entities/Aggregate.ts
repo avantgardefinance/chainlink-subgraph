@@ -21,7 +21,7 @@ export function ensureAggregate(type: string, open: BigInt, close: BigInt): Aggr
   aggregate = new Aggregate(id);
   aggregate.openTimestamp = open;
   aggregate.closeTimestamp = close;
-  aggregate.candles = preloadCandles(type, open, close).map((candle) => candle.id);
+  aggregate.candles = prePopulateCandles(type, open, close).map<string>((candle) => candle.id);
   aggregate.save(type);
 
   return aggregate;
@@ -35,7 +35,7 @@ export function useAggregate(type: string, id: string): Aggregate {
   return aggregate;
 }
 
-export function preloadCandles(type: string, open: BigInt, close: BigInt): Candle[] {
+export function prePopulateCandles(type: string, open: BigInt, close: BigInt): Candle[] {
   // copy candles of previous aggregate to new aggregate
   let previousAggregateId = aggregateId(type, getPreviousStartTime(open, type));
   let previousAggregate = Aggregate.load(type, previousAggregateId);

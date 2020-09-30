@@ -21,37 +21,8 @@ export function ensureAggregate(type: string, open: BigInt, close: BigInt): Aggr
   aggregate = new Aggregate(id);
   aggregate.openTimestamp = open;
   aggregate.closeTimestamp = close;
-  aggregate.candles = [];
+  aggregate.candles = preloadCandles(type, open, close).map((candle) => candle.id);
   aggregate.save(type);
-
-  // copy candles of previous aggregate to new aggregate
-  let previousAggregateId = aggregateId(type, getPreviousStartTime(open, type));
-  let previousAggregate = Aggregate.load(type, previousAggregateId);
-
-  if (previousAggregate) {
-    let newCandles: string[] = [];
-    let candles = previousAggregate.candles;
-    for (let i: i32 = 0; i < candles.length; i++) {
-      let previousCandle = Candle.load(type, candles[i]);
-      if (previousCandle == null) {
-        continue;
-      }
-
-      let prices = previousCandle.includedPrices;
-      let last = prices[prices.length - 1];
-      let price = Price.load(last) as Price;
-
-      if (price == null) {
-        continue;
-      }
-
-      let newCandleId = usePriceFeed(previousCandle.priceFeed).id + '/' + open.toString();
-      let newCandle = createCandle(newCandleId, type, price, open, close);
-      newCandles = newCandles.concat([newCandle.id]);
-    }
-    aggregate.candles = newCandles;
-    aggregate.save(type);
-  }
 
   return aggregate;
 }
@@ -62,4 +33,37 @@ export function useAggregate(type: string, id: string): Aggregate {
     logCritical('{} Aggregate {} does not exist', [type, id]);
   }
   return aggregate;
+}
+
+export function preloadCandles(type: string, open: BigInt, close: BigInt): Candle[] {
+  // copy candles of previous aggregate to new aggregate
+  let previousAggregateId = aggregateId(type, getPreviousStartTime(open, type));
+  let previousAggregate = Aggregate.load(type, previousAggregateId);
+
+  if (previousAggregate == null) {
+    return [] as Candle[];
+  }
+
+  let newCandles: Candle[] = [];
+  let candles = previousAggregate.candles;
+  for (let i: i32 = 0; i < candles.length; i++) {
+    let previousCandle = Candle.load(type, candles[i]);
+    if (previousCandle == null) {
+      continue;
+    }
+
+    let prices = previousCandle.includedPrices;
+    let last = prices[prices.length - 1];
+    let price = Price.load(last) as Price;
+
+    if (price == null) {
+      continue;
+    }
+
+    let newCandleId = usePriceFeed(previousCandle.priceFeed).id + '/' + open.toString();
+    let newCandle = createCandle(newCandleId, type, price, open, close);
+    newCandles = newCandles.concat([newCandle]);
+  }
+
+  return newCandles;
 }

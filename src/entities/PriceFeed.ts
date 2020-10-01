@@ -14,6 +14,8 @@ export function ensurePriceFeed(event: ethereum.Event, pair: string): PriceFeed 
   feed.latestPrice = '';
   feed.latestHourlyCandle = '';
   feed.latestDailyCandle = '';
+  feed.latestWeeklyCandle = '';
+  feed.save();
 
   return feed;
 }

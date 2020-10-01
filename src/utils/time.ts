@@ -16,3 +16,26 @@ export function getPreviousStartTime(current: BigInt, type: string): BigInt {
   }
   return current.minus(week);
 }
+
+export function getHourlyOpenTime(timestamp: BigInt): BigInt {
+  let interval = hour;
+  let adjustment = hourAdjustment;
+  return getOpenTime(timestamp, interval, adjustment);
+}
+
+export function getDailyOpenTime(timestamp: BigInt): BigInt {
+  let interval = day;
+  let adjustment = dayAdjustment;
+  return getOpenTime(timestamp, interval, adjustment);
+}
+
+export function getWeeklyOpenTime(timestamp: BigInt): BigInt {
+  let interval = week;
+  let adjustment = weekAdjustment;
+  return getOpenTime(timestamp, interval, adjustment);
+}
+
+export function getOpenTime(timestamp: BigInt, interval: BigInt, adjustment: BigInt): BigInt {
+  let excess = timestamp.minus(adjustment).mod(interval);
+  return timestamp.minus(excess);
+}

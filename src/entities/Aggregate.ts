@@ -1,16 +1,80 @@
-import { BigInt } from '@graphprotocol/graph-ts';
-import { Price } from '../generated/schema';
-import { getPreviousStartTime } from '../utils/time';
+import { BigInt, ethereum } from '@graphprotocol/graph-ts';
+import { HourlyAggregate, Price, AggregateState } from '../generated/schema';
+import {
+  day,
+  getDailyOpenTime,
+  getHourlyOpenTime,
+  getPreviousStartTime,
+  getWeeklyOpenTime,
+  hour,
+  weekAdjustment,
+} from '../utils/time';
 import { logCritical } from '../utils/logCritical';
 import { candleId, createCandle } from './Candle';
 import { Aggregate, Candle } from './Entity';
 import { usePriceFeed } from './PriceFeed';
+import { ensureAggregateState } from './AggregateState';
 
 export function aggregateId(type: String, open: BigInt): string {
   return type + '/' + open.toString();
 }
 
-export function ensureAggregate(type: string, open: BigInt, close: BigInt): Aggregate {
+export function updateAggregates(event: ethereum.Event): void {
+  let state = ensureAggregateState();
+
+  let hourlyAggregate = ensureHourlyAggregate(event);
+  let dailyAggregate = ensureDailyAggregate(event);
+  let weeklyAggregate = ensureWeeklyAggregate(event);
+
+  state.latestDailyAggregate = dailyAggregate.id;
+  state.latestHourlyAggregate = hourlyAggregate.id;
+  state.latestWeeklyAggregate = weeklyAggregate.id;
+  state.save();
+}
+
+export function ensureHourlyAggregate(event: ethereum.Event): Aggregate {
+  let state = ensureAggregateState();
+
+  let type = 'Hourly';
+  let open = getHourlyOpenTime(event.block.timestamp);
+  let close = open.plus(hour);
+  let aggregate = ensureAggregate(type, open, close, state.latestHourlyAggregate);
+
+  state.latestHourlyAggregate = aggregate.id;
+  state.save();
+
+  return aggregate;
+}
+
+export function ensureDailyAggregate(event: ethereum.Event): Aggregate {
+  let state = ensureAggregateState();
+
+  let type = 'Daily';
+  let open = getDailyOpenTime(event.block.timestamp);
+  let close = open.plus(day);
+  let aggregate = ensureAggregate(type, open, close, state.latestDailyAggregate);
+
+  state.latestWeeklyAggregate = aggregate.id;
+  state.save();
+
+  return aggregate;
+}
+
+export function ensureWeeklyAggregate(event: ethereum.Event): Aggregate {
+  let state = ensureAggregateState();
+
+  let type = 'Weekly';
+  let open = getWeeklyOpenTime(event.block.timestamp);
+  let close = open.plus(weekAdjustment);
+  let aggregate = ensureAggregate(type, open, close, state.latestWeeklyAggregate);
+
+  state.latestDailyAggregate = aggregate.id;
+  state.save();
+
+  return aggregate;
+}
+
+export function ensureAggregate(type: string, open: BigInt, close: BigInt, previous: string): Aggregate {
   let id = aggregateId(type, open);
   let aggregate = Aggregate.load(type, id) as Aggregate;
 
@@ -24,11 +88,27 @@ export function ensureAggregate(type: string, open: BigInt, close: BigInt): Aggr
   aggregate.candles = [];
   aggregate.save(type);
 
-  // need to do this
+  createMissingAggregates(type, open, close, previous);
+
   aggregate.candles = prePopulateCandles(type, open, close).map<string>((candle) => candle.id);
   aggregate.save(type);
 
   return aggregate;
+}
+
+export function createMissingAggregates(type: string, currentOpen: BigInt, currentClose: BigInt, prevId: string): void {
+  let previous = Aggregate.load(type, prevId);
+  if (!previous) {
+    return;
+  }
+
+  let open = previous.openTimestamp;
+  let interval = currentClose.minus(currentOpen);
+
+  while (open.plus(interval).lt(currentOpen)) {
+    open = open.plus(interval);
+    ensureAggregate(type, open, open.plus(interval), prevId);
+  }
 }
 
 export function useAggregate(type: string, id: string): Aggregate {
